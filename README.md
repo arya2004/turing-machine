@@ -1,71 +1,94 @@
-# Turing Machine Calculator Simulation
+# Turing Machine in C
 
-This repository contains a collection of header files for simulating a basic calculator using a Turing machine. The calculator supports addition, subtraction, multiplication, division, and factorial operations. The simulation is based on the principles and theory described in the paper [Construction of Basic Calculator through Turing Machine](https://www.ijetajournal.org/volume-2/issue-6/IJETA-V2I6P1.pdf).
+This repository contains an implementation of a **Turing Machine** written in C. A Turing Machine is a mathematical model of computation that manipulates symbols on a strip of tape according to a table of rules. It is used to understand the limits of what can be computed.
 
-## Table of Contents
+## Features
 
-- [Introduction](#introduction)
-- [Usage](#usage)
-- [Getting Started](#getting-started)
-- [Supported Operations](#supported-operations)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
+- **Flexible Tape Initialization**: Random, default, or user-defined initial tape configurations.
+- **Customizable Instructions**: Supports user-defined transition states through input files.
+- **Execution Logging**: Outputs tape state and head position during execution.
+- **Memory Management**: Dynamically expands the tape as needed.
 
-## Introduction
-
-The Turing machine is a theoretical computing device that manipulates symbols on an infinite tape based on a set of rules. This repository implements a Turing machine simulation of a basic calculator capable of performing addition, subtraction, multiplication, division, and factorial calculations.
-
-The simulation aims to provide an understanding of how a Turing machine can be designed and programmed to perform arithmetic operations. It follows the principles outlined in the referenced paper, allowing developers to explore and experiment with the underlying concepts.
 
 ## Usage
 
-To use the Turing machine calculator simulation, follow these steps:
+### Build Instructions
 
-1. Clone the repository to your local machine.
-   ```shell
-   git clone https://github.com/arya2004/turing-machine-calculator-simulator.git
+Compile the code using GCC or any compatible C compiler:
+
+```bash
+gcc -o turing_machine turing_machine.c
+```
+
+### Running the Program
+
+#### Syntax:
+```bash
+./turing_machine <instruction_file.turing> <optional_initial_tape>
+```
+
+- `<instruction_file.turing>`: File containing Turing Machine instructions.
+- `<optional_initial_tape>`: (Optional) Initial tape configuration.
+
+#### Example:
+1. With default tape:
+   ```bash
+   ./turing_machine instructions.turing
    ```
-2. Copy the required header files from the repository to your project directory.
-3. Include the desired header file(s) in your C program.
-4. Follow the instructions provided in the referenced paper to implement and execute the desired arithmetic operation.
 
-## Getting Started
+2. With custom tape:
+   ```bash
+   ./turing_machine instructions.turing "11001"
+   ```
 
-To understand the concepts and theory behind the Turing machine calculator simulation, it is recommended to read the paper [Simulation of Basic Calculator through Turing Machine](https://www.ijetajournal.org/volume-2/issue-6/IJETA-V2I6P1.pdf). The paper provides detailed information on the design and implementation of the Turing machine, as well as the rules and configurations required for each supported operation.
+### Input File Format
 
-## Supported Operations
+The `.turing` instruction file should follow the format:
+```
+<state> <expected_symbol> <write_symbol> <direction> <next_state>
+```
 
-The Turing machine calculator simulation supports the following arithmetic operations:
+- **state**: The current state (integer).
+- **expected_symbol**: Symbol to read at the head.
+- **write_symbol**: Symbol to write at the head.
+- **direction**: Direction to move the head (`R`, `L`, or `H` for Halt).
+- **next_state**: Next state to transition to.
 
-- Addition (+)
-- Subtraction (-)
-- Multiplication (*)
-- Division (/)
-- Factorial (!)
+#### Example:
+```
+0 _ 1 R 1
+1 1 0 L 0
+1 _ _ H 0
+```
 
-Each operation has its own header file, which contains the necessary definitions, rules, and configurations for simulating the operation using a Turing machine.
+### Outputs
+
+- Final tape state.
+- Head position.
+- Error messages for out-of-bound conditions or invalid instructions.
+
+---
+
+
+
+## Limitations
+
+- The tape must have sufficient memory; expansion occurs dynamically but is limited by system constraints.
+- Instructions must cover all possible states and symbols to avoid runtime errors.
+
+---
 
 ## Contributing
 
-Contributions to this repository are welcome. If you have any improvements or additional operations to contribute, please follow these steps:
-
 1. Fork the repository.
-2. Create a new branch for your feature or improvement.
-3. Implement your changes and test them thoroughly.
-4. Commit and push your changes to your forked repository.
-5. Submit a pull request detailing your changes and their benefits.
+2. Create a new feature branch: `git checkout -b feature-name`.
+3. Commit your changes: `git commit -m "Add feature-name"`.
+4. Push to the branch: `git push origin feature-name`.
+5. Open a Pull Request.
+
+---
 
 ## License
 
-This repository is licensed under the [MIT License](LICENSE). Feel free to use the code provided here in your own projects.
-
-## Acknowledgements
-
-We would like to acknowledge the authors of the referenced paper, [Construction of Basic Calculator through Turing Machine: A Review](https://www.ijetajournal.org/volume-2/issue-6/IJETA-V2I6P1.pdf), and the Youtube video [Factorial Turing machine:  Computing 4!](https://www.youtube.com/watch?v=j7cCKXe1NcY), for their valuable research and insights into implementing a calculator using a Turing machine.
-
-If you have any questions or suggestions for improvement, please don't hesitate to open an issue or reach out to the project maintainers.
-
-Happy calculating!
-
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
