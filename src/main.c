@@ -126,7 +126,9 @@ int main(int argc, char *argv[])
 {
     if (argc < 2 || argc > 3)
     {
-        fprintf(stderr, "Usage: %s <instruction_file.turing> [optional_initial_tape]\n", argv[0]);
+        fprintf(stderr, "Usage: ./turing_machine <instruction_file.turing> [optional_initial_tape]\n");
+        fprintf(stderr, "Example: ./turing_machine instructions.turing\n");
+        fprintf(stderr, "Example: ./turing_machine instructions.turing \"11001\"\n");
         return 1;
     }
 
@@ -142,7 +144,7 @@ int main(int argc, char *argv[])
 
     printf("Instruction file: %s\n", instruction_file);
 
-    // TODO: Validate the format of the instruction file
+    // TODO: Validate if file exists, validate the format of the instruction file
     // TODO : Read Instruction file and parse the instructions
     // <state> <expected_symbol> <write_symbol> <direction> <next_state>
 
