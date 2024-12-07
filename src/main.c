@@ -50,6 +50,17 @@ typedef struct
 
 } Program;
 
+// Checks if the filename has a '.turing' extension
+bool is_filename_valid(char *filename)
+{
+    char *dot = strrchr(filename, '.');
+    if (dot && strcmp(dot, ".turing") == 0)
+    {
+        return true;
+    }
+    return false;
+}
+
 void machine_randomize(Machine *machine)
 {
     srand(time(NULL));
@@ -113,20 +124,25 @@ void machine_print(Machine *machine)
 
 int main(int argc, char *argv[])
 {
-    /*
-        Check if run configurations are given
-        turing_machine <instruction_file.turing> <optional_initial_tape>
-    */
-
     if (argc < 2 || argc > 3)
     {
         fprintf(stderr, "Usage: %s <instruction_file.turing> [optional_initial_tape]\n", argv[0]);
         return 1;
     }
 
+    // Get the instruction_file
     char *instruction_file = argv[1];
+
+    // Validate the instruction file name
+    if (!is_filename_valid(instruction_file))
+    {
+        fprintf(stderr, "Error: The file must have a .turing extension.\n");
+        return 1;
+    }
+
     printf("Instruction file: %s\n", instruction_file);
 
+    // TODO: Validate the format of the instruction file
     // TODO : Read Instruction file and parse the instructions
     // <state> <expected_symbol> <write_symbol> <direction> <next_state>
 
@@ -163,6 +179,7 @@ int main(int argc, char *argv[])
 
     program.machine = &machine;
 
+    // TODO: Remove the hardcoded instructions and insert the instructions from Instruction File
     Instruction inst[] = {
         {0, {1, RIGHT, 2}, {0, RIGHT, 0}},
         {NULL},
