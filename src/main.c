@@ -45,6 +45,7 @@ typedef struct
     Machine  *machine;
     Instruction *instruction;
     size_t curr;
+    size_t inst_count;
 
 }Program;
 
@@ -59,16 +60,22 @@ void machine_randoize(Machine *machine)
 
 }
 
-size_t machine_execute(Machine *machine, Instruction *instruction)
-{
+size_t machine_execute(Machine *machine, Instruction *instruction, size_t inst_count)
+{   
+    if(machine->head >= machine->data_size) return inst_count;
+
     if(machine->data[machine->head] == instruction->exprected)
     {   
         machine->data[machine->head] = instruction->yes.write;
+        if(machine->head == 0 && instruction->yes.dir < 0) return inst_count;
         machine->head += instruction->yes.dir;
         return instruction->yes.next;
     }
+
     machine->data[machine->head] = instruction->no.write;
+    if(machine->head == 0 && instruction->no.dir < 0) return inst_count;
     machine->head += instruction->no.dir;
+
     return instruction->no.next;
 }
 
@@ -89,7 +96,7 @@ int main()
     Program program = {0};
     Machine machine = {0};
    
-    machine.data_size = 3;
+    machine.data_size = 8;
     machine.data = malloc(sizeof(bool)*machine.data_size);
     machine_randoize(&machine);
      program.machine = &machine;
@@ -101,12 +108,12 @@ int main()
 
     program.instruction = inst;
 
-    size_t inst_count = sizeof(inst)/ sizeof(*inst);
+    program.inst_count = sizeof(inst)/ sizeof(*inst);
 
     machine_print(program.machine);
-    while (program.curr <= inst_count - 1)
+    while (program.curr <= program.inst_count - 1)
     {   
-        program.curr = machine_execute(program.machine, &inst[program.curr]);
+        program.curr = machine_execute(program.machine, &inst[program.curr], program.inst_count);
         machine_print(program.machine);
     }
     
