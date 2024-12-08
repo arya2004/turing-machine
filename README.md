@@ -2,6 +2,10 @@
 
 This repository contains an implementation of a **Turing Machine** written in C. A Turing Machine is a mathematical model of computation that manipulates symbols on a strip of tape according to a table of rules. It is used to understand the limits of what can be computed.
 
+## Inspiration
+
+This project was inspired by the creation of a [Turing Machine Calculator in C](https://github.com/arya2004/turing-machine-calculator-simulator). While working on that project, the idea of developing a **universal Turing Machine simulator** emerged. The goal of this project is to provide a generalized implementation that supports customizable configurations and can simulate any Turing Machine defined by a valid set of rules.
+
 ## Features
 
 - **Flexible Tape Initialization**: Random, default, or user-defined initial tape configurations.
