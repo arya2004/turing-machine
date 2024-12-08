@@ -9,20 +9,32 @@ This repository contains an implementation of a **Turing Machine** written in C.
 - **Execution Logging**: Outputs tape state and head position during execution.
 - **Memory Management**: Dynamically expands the tape as needed.
 
-
 ## Usage
 
 ### Build Instructions
 
+#### With CMake
+
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+
+#### Without CMake
+
 Compile the code using GCC or any compatible C compiler:
 
 ```bash
-gcc -o turing_machine turing_machine.c
+mkdir build
+gcc -o build/turing_machine src/main.c
 ```
 
 ### Running the Program
 
 #### Syntax:
+
 ```bash
 ./turing_machine <instruction_file.turing> <optional_initial_tape>
 ```
@@ -31,7 +43,9 @@ gcc -o turing_machine turing_machine.c
 - `<optional_initial_tape>`: (Optional) Initial tape configuration.
 
 #### Example:
+
 1. With default tape:
+
    ```bash
    ./turing_machine instructions.turing
    ```
@@ -44,6 +58,7 @@ gcc -o turing_machine turing_machine.c
 ### Input File Format
 
 The `.turing` instruction file should follow the format:
+
 ```
 <state> <expected_symbol> <write_symbol> <direction> <next_state>
 ```
@@ -55,6 +70,7 @@ The `.turing` instruction file should follow the format:
 - **next_state**: Next state to transition to.
 
 #### Example:
+
 ```
 0 _ 1 R 1
 1 1 0 L 0
@@ -68,8 +84,6 @@ The `.turing` instruction file should follow the format:
 - Error messages for out-of-bound conditions or invalid instructions.
 
 ---
-
-
 
 ## Limitations
 
@@ -91,4 +105,3 @@ The `.turing` instruction file should follow the format:
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
-
