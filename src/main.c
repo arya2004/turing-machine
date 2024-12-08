@@ -1,202 +1,269 @@
 #include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <time.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <ctype.h>
+#include <assert.h>
+#include <time.h>
 
-typedef struct
-{
-    bool *data;
-    size_t data_size;
+#define NUM_STATES 256
+#define DATA_START_CAPACITY 128
+#define TAPE_START_CAPACITY 32
 
-    size_t head;
+#define DA_APPEND(da, item) do {                                                       		\
+	    if ((da)->count >= (da)->capacity) {                                               	\
+		        (da)->capacity = (da)->capacity == 0 ? DATA_START_CAPACITY : (da)->capacity*2; \
+		        void *new = calloc(((da)->capacity+1), sizeof(*(da)->data));                   \
+		        assert(new && "outta ram");                                                       \
+		        memcpy(new, (da)->data, (da)->count);                                          \
+		        free((da)->data);                                                              \
+		        (da)->data = new;                                                              \
+		    }                                                                                  \
+	    (da)->data[(da)->count++] = (item);                                                	\
+	} while (0)
 
+#define B '_'
+
+typedef struct {
+    unsigned char *data;
+    size_t count;
+    size_t capacity;
+} Tape;
+    
+typedef struct {
+    Tape tape;
+    size_t head;    
 } Machine;
-
-typedef enum
-{
+    
+typedef enum {
     LEFT = -1,
     STAY = 0,
     RIGHT = 1,
-
+	HALT,
 } Direction;
-
-typedef struct
-{
-    bool write;
+    
+typedef struct {
+	size_t symbol;
+    unsigned char expected;
+    unsigned char write;
     Direction dir;
     size_t next;
-
 } State;
 
-// exprected value, value if true, direction if true,next if true, value if false, directoin if false, nxt if false
-typedef struct main
-{
-    bool exprected;
-
-    State yes;
-
-    State no;
-
+typedef struct {
+    State value[NUM_STATES];
 } Instruction;
-
-typedef struct
-{
-
+	
+typedef struct {
+	Instruction *data;
+	size_t count;
+	size_t capacity;
+} Instructions;
+    
+typedef struct {
     Machine *machine;
-    Instruction *instruction;
-    size_t curr;
-    size_t inst_count;
-
+    Instructions insts;
+    size_t cur;
 } Program;
-
-// Checks if the filename has a '.turing' extension
-bool is_filename_valid(char *filename)
-{
-    char *dot = strrchr(filename, '.');
-    if (dot && strcmp(dot, ".turing") == 0)
-    {
-        return true;
-    }
-    return false;
-}
-
-void machine_randomize(Machine *machine)
-{
+    
+void tape_randomize(Tape *tape) {
     srand(time(NULL));
-    for (size_t i = 0; i < machine->data_size; i++)
-    {
-        machine->data[i] = rand() % 2;
+    for(size_t i = 0; i < tape->capacity; i++) {
+        tape->data[i] = rand() % NUM_STATES;
     }
 }
-
-void machine_initialize_data(Machine *machine, char *tape_data)
-{
-    for (size_t i = 0; i < machine->data_size; i++)
-    {
-        if (tape_data[i] == '0')
-        {
-            machine->data[i] = 0;
-        }
-        else if (tape_data[i] == '1')
-        {
-            machine->data[i] = 1;
-        }
-        else
-        {
-            fprintf(stderr, "Error: Invalid character '%c' in tape data. Only '0' or '1' are allowed.\n", tape_data[i]);
-            exit(EXIT_FAILURE);
-        }
-    }
+	
+void tape_default(Tape *tape) {
+	memset(tape->data, B, sizeof(char)*tape->capacity);
+}
+	
+void tape_set(Tape *tape, char *value) {
+	for(size_t i = 0; i < tape->count; i++) {
+		if(isdigit(value[i])) tape->data[i] = value[i] - '0';
+		else tape->data[i] = value[i];
+	}
+}
+	
+void machine_free(Machine *machine) {
+	free(machine->tape.data);	
 }
 
-size_t machine_execute(Machine *machine, Instruction *instruction, size_t inst_count)
-{
-    if (machine->head >= machine->data_size)
-        return inst_count;
-
-    if (machine->data[machine->head] == instruction->exprected)
-    {
-        machine->data[machine->head] = instruction->yes.write;
-        if (machine->head == 0 && instruction->yes.dir < 0)
-            return inst_count;
-        machine->head += instruction->yes.dir;
-        return instruction->yes.next;
-    }
-
-    machine->data[machine->head] = instruction->no.write;
-    if (machine->head == 0 && instruction->no.dir < 0)
-        return inst_count;
-    machine->head += instruction->no.dir;
-
-    return instruction->no.next;
+Tape tape_init(size_t capacity, size_t count) {
+	Tape tape = {0};
+	tape.count = count;
+	tape.capacity = capacity;
+	tape.data = malloc(sizeof(unsigned char)*tape.capacity);
+	tape_default(&tape);
+	return tape;
 }
-
-void machine_print(Machine *machine)
-{
+    
+size_t machine_execute(Machine *machine, Instruction *inst, size_t inst_count) {
+	// expand tape if necessary
+    if(machine->head >= machine->tape.capacity) {
+        Tape tape = tape_init(machine->tape.capacity*2, machine->tape.count);
+        memcpy(tape.data, machine->tape.data, sizeof(*machine->tape.data)*machine->tape.capacity);
+        free(machine->tape.data);
+        machine->tape = tape;
+    }
+        
+    for(size_t i = 0; i < NUM_STATES; i++) {
+        if(machine->tape.data[machine->head] == inst->value[i].expected) {    
+			// if current instruction is HALT, then return inst_count which triggers an exit
+			if(inst->value[i].dir == HALT) return inst_count;
+				
+            machine->tape.data[machine->head] = inst->value[i].write;
+				
+			// check left boundary to ensure there is no indexing issues
+            if(machine->head == 0 && inst->value[i].dir < 0) {
+                fprintf(stderr, "out of bounds!\n");
+                exit(1);
+            }
+			// move the head the proper direction (-1, 0, or 1)
+            machine->head += inst->value[i].dir;
+            if(machine->head > machine->tape.count) machine->tape.count = machine->head;        
+            
+            return inst->value[i].next;
+        }
+    }
+	fprintf(stderr, "ERROR: Not all cases handled in states\n");
+	exit(1);
+}
+    
+void machine_print(Machine *machine) {
     printf("head: %zu, ", machine->head);
-    for (size_t i = 0; i < machine->data_size; i++)
-    {
-        printf("%d -> ", machine->data[i]);
+    for(size_t i = 0; i < machine->tape.count; i++) {
+		if(machine->tape.data[i] != B) {
+            printf("%c", machine->tape.data[i]);
+		}
     }
-    printf("\n");
+	printf("\n");
+}
+	
+void insts_print(Instructions insts) {
+	for(size_t i = 0; i < insts.count; i++) {
+		State value = insts.data[i].value[0];
+		printf("symbol: %zu expected: %c write: %c dir: %d next: %zu\n", 
+				value.symbol, value.expected, value.write, value.dir, value.next);
+	}
 }
 
-int main(int argc, char *argv[])
-{
-    if (argc < 2 || argc > 3)
-    {
-        fprintf(stderr, "Usage: ./turing_machine <instruction_file.turing> [optional_initial_tape]\n");
-        fprintf(stderr, "Example: ./turing_machine instructions.turing\n");
-        fprintf(stderr, "Example: ./turing_machine instructions.turing \"11001\"\n");
-        return 1;
-    }
+void print_usage(char *program, char *error) {
+	fprintf(stderr, "ERROR: %s\n", error);
+	fprintf(stderr, "USAGE: %s <input_file.turing> <optional starting tape>\n", program);
+	exit(1);
+}
+	
+char *read_from_file(char *filename, char *program, size_t *data_s) {
+	FILE *file = fopen(filename, "r");
+	if(file == NULL) print_usage(program, "Cannot open file");
+		
+	fseek(file, 0, SEEK_END);
+	size_t len = ftell(file);
+	fseek(file, 0, SEEK_SET);	
+	
+	char *data = calloc(len+1, sizeof(char));
+	fread(data, sizeof(char), len, file);
+	
+	fclose(file);
+	*data_s = len;
+	
+	return data;
+}
+	
+size_t get_number(char *data, size_t data_s, size_t *index) {
+	char num[256] = {0};
+	size_t num_s = 0;
+	while(*index < data_s && isdigit(data[*index])) {
+		num[num_s++] = data[*index];
+		(*index)++;
+	}
+	return atol(num);
+}
+	
+Direction get_dir(char c, size_t index) {
+	switch(c) {
+		case 'R': return RIGHT;
+		case 'L': return LEFT;
+		case 'H': return HALT;
+		default:
+			fprintf(stderr, "error: expected R, L, or H for the direction but found %c at %zu\n", c, index);
+			exit(1);
+	}
+}
+	
+Instructions get_insts(char *data, size_t data_s) {
+	Instructions insts = {0};
+	for(size_t i = 0; i < data_s; i++) {
+		Instruction inst = {0};
+		size_t cur = 0;
+		while(true) {
+			State state = {0};
+			state.symbol = get_number(data, data_s, &i);
+			i++;
+			state.expected = data[i++];
+			i++;
+			state.write = data[i++];
+			i++;
+			state.dir = get_dir(data[i], i);
+			i += 2;
+			state.next = get_number(data, data_s, &i);
+			i++;			
+			inst.value[cur++] = state;
+			size_t start = i;
+			if(get_number(data, data_s, &i) != state.symbol) {
+				i = start-1;	
+				break;
+			}
+		}
+		DA_APPEND(&insts, inst);		
+	}
+	return insts;
+}
+	
 
-    // Get the instruction_file
-    char *instruction_file = argv[1];
-
-    // Validate the instruction file name
-    if (!is_filename_valid(instruction_file))
-    {
-        fprintf(stderr, "Error: The file must have a .turing extension.\n");
-        return 1;
-    }
-
-    printf("Instruction file: %s\n", instruction_file);
-
-    // TODO: Validate if file exists, validate the format of the instruction file
-    // TODO : Read Instruction file and parse the instructions
-    // <state> <expected_symbol> <write_symbol> <direction> <next_state>
-
-    // Initial Tape
-    char *initial_tape;
-    size_t tape_length = 8;
-
-    if (argc == 3)
-    {
-        initial_tape = argv[2];
-        tape_length = strlen(initial_tape);
-        printf("Initial tape: %s\n", initial_tape);
-    }
-    else
-    {
-        printf("Initial tape not provided. Generating randomized tape..\n");
-        initial_tape = NULL;
-    }
-
-    Program program = {0};
-    Machine machine = {0};
-
-    // Machine Configuration
-    machine.data_size = tape_length;
-    machine.data = malloc(sizeof(bool) * machine.data_size);
-    if (initial_tape)
-    {
-        machine_initialize_data(&machine, initial_tape);
-    }
-    else
-    {
-        machine_randomize(&machine);
-    }
-
-    program.machine = &machine;
-
-    // TODO: Remove the hardcoded instructions and insert the instructions from Instruction File
-    Instruction inst[] = {
-        {0, {1, RIGHT, 2}, {0, RIGHT, 0}},
-        {NULL},
-    };
-
-    program.instruction = inst;
-
-    program.inst_count = sizeof(inst) / sizeof(*inst);
-
-    machine_print(program.machine);
-    while (program.curr <= program.inst_count - 1)
-    {
-        program.curr = machine_execute(program.machine, &inst[program.curr], program.inst_count);
-        machine_print(program.machine);
-    }
-
+int main(int argc, char **argv) {
+	char *prog_name = argv[0];
+	if(argc < 2) {
+		print_usage(prog_name, "Not enough arguments");
+	}
+		
+	size_t data_s = 0;
+	char *data = read_from_file(argv[1], prog_name, &data_s);
+	
+	Machine machine = {0};
+	Program program = {0};
+	Instructions insts = get_insts(data, data_s);
+	
+	if(argc <= 2) {	
+		// set the defaults if no tape is passed
+	    machine.tape.capacity = TAPE_START_CAPACITY;
+	    machine.tape.count = machine.tape.capacity;        
+	    machine.tape.data = malloc(sizeof(unsigned char)*machine.tape.capacity);                
+		tape_default(&machine.tape);
+	} else {
+		// set value to user arg if passed
+		size_t tape_len = strlen(argv[2]);
+		machine.tape.capacity = tape_len*2;
+		machine.tape.count = tape_len;
+	    machine.tape.data = malloc(sizeof(unsigned char)*machine.tape.capacity);                		
+		tape_default(&machine.tape);		
+		tape_set(&machine.tape, argv[2]);
+	}
+    
+    program.machine = &machine;            
+    program.insts = insts;    
+	
+	//insts_print(insts);
+    
+    while(program.cur <= program.insts.count-1) {
+        program.cur = machine_execute(program.machine, &program.insts.data[program.cur], program.insts.count);    
+    }    
+		
+	// free the memory
+    machine_print(program.machine);			
+	machine_free(program.machine);
+	free(insts.data);
+	free(data);
+	
     return 0;
 }
